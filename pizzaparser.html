@@ -1,0 +1,50 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+	  "http://www.w3.org/TR/html4/loose.dtd">
+
+<html lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+    <title>Chartparser</title>
+    <script src="pizzagrammar.js"></script>
+    <script src="chartparser.js"></script>
+    <script>
+
+function runparser() {
+  var words = document.getElementById("words").value.split(' ');
+  var resultsDiv = document.getElementById("results");
+  
+  var startTime = new Date();
+  var parseResults = parse(words, grammarRoot, grammarRules);
+  var parseTime = new Date() - startTime;
+
+  var title = document.createElement("H2");
+  title.appendChild(document.createTextNode('"' + words.join(" ") + '"'));
+  resultsDiv.appendChild(title);
+
+  if (parseResults) { 
+    var resultList = document.createElement("OL");
+    resultsDiv.appendChild(resultList);
+    for (var i in parseResults) {
+      var item = document.createElement("LI");
+      item.appendChild(document.createTextNode(serialize(parseResults[i])));
+      resultList.appendChild(item);
+    }
+  
+  } else {
+   resultsDiv.appendChild(document.createTextNode("No results found!"));
+  }
+  
+  resultsDiv.appendChild(document.createTextNode("Parse time: " + parseTime + " ms"));
+}
+
+    </script>
+ </head>
+
+  <body onload="runparser();">
+    <input type="text" id="words" size="40" 
+	   value="I would like a small coca cola and two pizzas with pepperoni and mushrooms">
+    <button onclick="runparser();">Parse</button>
+   <div id="results">
+    </div>
+ </body>
+</html>
