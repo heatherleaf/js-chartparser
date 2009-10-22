@@ -84,6 +84,7 @@ function serialize(obj) {
 // parse chart
 // conceptually this is a set of edges, but it is optimized
 function Chart(numberOfWords) {
+  this.numberOfWords = numberOfWords;
   this.passives = new Array(numberOfWords);
   this.actives = new Array(numberOfWords);
   for (var i = 0; i <= numberOfWords; i++) {
@@ -122,6 +123,45 @@ function Chart(numberOfWords) {
     } else {
       return this.passives[edge.end][edge.next()];
     }
+  }
+  
+  // Chart.edgesForCat(lhs, start, end)
+  // return all passive edge with the given lhs, start and end
+  //  - start, end are optional; defaults to 0, number-of-words
+  this.edgesForCat = function(lhs, start, end) {
+    start = start || 0;
+    end = end || numberOfWords;
+    var results = [];
+    var finalEdges = this.matchingEdges(new Edge('', [lhs], start));
+    for (var i in finalEdges) 
+      if (finalEdges[i].end == end) 
+	results.push(finalEdges[i].out);
+    return results;
+  }
+  
+  // Chart.allEdges(bool)
+  // return an array of all edges in the chart
+  //  - onlyPassive (optional boolean): return only passive edges
+  this.allEdges = function(onlyPassive) {
+    var edges = [];
+    for (var i in this.passives) 
+      for (var j in this.passives[i]) 
+	for (var k in this.passives[i][j])
+	  edges.push(this.passives[i][j][k]);
+    if (onlyPassive)
+      return edges;
+    for (var i in this.actives) 
+      for (var j in this.actives[i]) 
+	for (var k in this.actives[i][j])
+	  edges.push(this.actives[i][j][k]);
+    return edges
+  }
+  
+  // Chart.statistics()
+  // return some numbers for the chart
+  this.statistics = function() {
+    return {nrEdges: this.allEdges().length,
+	    nrPassiveEdges: this.allEdges(true).length};
   }
 }
 
@@ -257,14 +297,15 @@ function parse(words, root, grammar) {
     }
   }
 
-  // filter out only the root edges spanning the whold input
-  var results = [];
-  var finalEdges = chart.matchingEdges(new Edge('', [root], 0));
-  for (var i in finalEdges) 
-    if (finalEdges[i].end == words.length) 
-      results.push(finalEdges[i].out);
+  return chart;
+//   // filter out only the root edges spanning the whold input
+//   var results = [];
+//   var finalEdges = chart.matchingEdges(new Edge('', [root], 0));
+//   for (var i in finalEdges) 
+//     if (finalEdges[i].end == words.length) 
+//       results.push(finalEdges[i].out);
   
-  return results;
+//   return results;
 }
 
 
