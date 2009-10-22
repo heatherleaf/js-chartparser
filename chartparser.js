@@ -1,5 +1,6 @@
 
 // a logging function
+//  - uncomment if you want to debug the parsing process
 function LOG(str) {
   // console.log("" + str);
 }
