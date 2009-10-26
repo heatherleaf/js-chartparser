@@ -1,4 +1,6 @@
 
+// helper functions for the parser demo
+
 function appendElement(parent, element, text) {
   var elem = document.createElement(element);
   if (text)

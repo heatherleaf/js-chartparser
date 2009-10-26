@@ -23,12 +23,6 @@ function clone(obj){
 // this is used, e.g. for creating hash keys for any object
 // simplified from http://blog.stchur.com/2007/04/06/serializing-objects-in-javascript
 function serialize(obj) {
-  if (obj == null)
-    return obj;
-  
-  if (obj.toSource)
-    return obj.toSource();
-
   switch (typeof(obj)) {
   case 'function':
     return obj.toSource ? obj.toSource() : obj;
@@ -57,27 +51,6 @@ function serialize(obj) {
   default:
     return obj;
   }    
-//   if (!(obj instanceof Object)) {
-//     return obj;
-
-//   } else if (obj.toSource instanceof Function) {
-//     return obj.toSource();
-  
-//   } else if (obj instanceof Function) {
-//     return obj;
-
-//   } else if (obj instanceof Array) {
-//     var str = '[';
-//     for (var i in obj)
-//       str += serialize(obj[i]) + ',';
-//     return str.replace(/\,$/, '') + ']';
-
-//   } else {
-//     var str = '{';
-//     for (var key in obj) 
-//       str += key + ':' + serialize(obj[key]) + ',';
-//     return str.replace(/\,$/, '') + '}';
-//   }
 }
 
 
@@ -298,14 +271,6 @@ function parse(words, root, grammar) {
   }
 
   return chart;
-//   // filter out only the root edges spanning the whold input
-//   var results = [];
-//   var finalEdges = chart.matchingEdges(new Edge('', [root], 0));
-//   for (var i in finalEdges) 
-//     if (finalEdges[i].end == words.length) 
-//       results.push(finalEdges[i].out);
-  
-//   return results;
 }
 
 
