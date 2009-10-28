@@ -1,4 +1,5 @@
 
+//////////////////////////////////////////////////////////////////////
 // a logging function
 //  - uncomment if you want to debug the parsing process
 function LOG(str) {
@@ -6,54 +7,34 @@ function LOG(str) {
 }
 
 
+//////////////////////////////////////////////////////////////////////
 // we need to be able to clone objects between different edges
 // borrowed from http://keithdevens.com/weblog/archive/2007/Jun/07/javascript.clone
 function clone(obj){
-    if(obj == null || typeof(obj) !== 'object')
-        return obj;
-    var temp = new obj.constructor(); 
-    for (var key in obj) 
-      if (obj.hasOwnProperty(key)) 
-        temp[key] = clone(obj[key]);
-    return temp;
-}
-
-
-// serialization of arbitrary objects
-// this is used, e.g. for creating hash keys for any object
-// simplified from http://blog.stchur.com/2007/04/06/serializing-objects-in-javascript
-function serialize(obj) {
-  switch (typeof(obj)) {
-  case 'function':
-    return obj.toSource ? obj.toSource() : obj;
-    
-  case 'object':
-    if (obj == null) 
-      return obj;
-    
-    if (obj.toSource)
-      return obj.toSource();
-
-    var len = obj.length;
-    if (len) {
-      var str = '[';
-      for (var i = 0; i <= len; i++)
-	str += serialize(obj[i]) + ',';
-      return str.replace(/\,$/, '') + ']';
-      
-    } else {
-      var str = '{';
-      for (var key in obj) 
-	str += key + ':' + serialize(obj[key]) + ',';
-      return str.replace(/\,$/, '') + '}';
-    }
-    
-  default:
+  if (obj == null || typeof(obj) != 'object') {
     return obj;
-  }    
+  }
+  var temp = new obj.constructor(); 
+  for (var key in obj) {
+    temp[key] = clone(obj[key]);
+  }
+  return temp;
 }
 
 
+//////////////////////////////////////////////////////////////////////
+// objects are by default printed "[Object]"
+// we change this behaviour, to be able to use objects in hash tables
+Object.prototype.toString = function toString() {
+  var str = "{";
+  for (var key in this) {
+    str += key + ":" + this[key] + ";";
+  }
+  return str + "}";
+};
+
+
+//////////////////////////////////////////////////////////////////////
 // parse chart
 // conceptually this is a set of edges, but it is optimized
 function Chart(numberOfWords) {
@@ -68,17 +49,18 @@ function Chart(numberOfWords) {
   // Chart.add(edge)
   // add the edge to the chart, return true if the chart was changed 
   // (i.e. if the chart didn't already contain the edge)
-  this.add = function(edge) {
+  this.add = function add(edge) {
     var subchart, cat;
-    if (edge.isPassive()) {
+    if (edge.isPassive) {
       subchart = this.passives[edge.start];
       cat = edge.lhs;
     } else {
       subchart = this.actives[edge.end];
-      cat = edge.next();
+      cat = edge.next.content;
     }
-    if (!(cat in subchart)) 
+    if (!(cat in subchart)) {
       subchart[cat] = {};
+    }
     if (edge in subchart[cat]) {
       return false;
     } else {
@@ -87,186 +69,199 @@ function Chart(numberOfWords) {
     }
   }
 
-  // Chart.matchingEdges(edge)
-  // return all edges in the chart that can be combined with the given edge
-  // NOTE: the edges are returned as a hash table
-  this.matchingEdges = function(edge) {
-    if (edge.isPassive()) {
-      return this.actives[edge.start][edge.lhs];
-    } else {
-      return this.passives[edge.end][edge.next()];
-    }
-  }
-  
-  // Chart.edgesForCat(lhs, start, end)
-  // return all passive edge with the given lhs, start and end
-  //  - start, end are optional; defaults to 0, number-of-words
-  this.edgesForCat = function(lhs, start, end) {
+  // Chart.resultsForRule(lhs, start, end)
+  // return all parse results for the given lhs, start, and end
+  //  - start, end are optional; defaults to 0, numberOfWords
+  this.resultsForRule = function resultsForRule(lhs, start, end) {
     start = start || 0;
     end = end || numberOfWords;
     var results = [];
-    var finalEdges = this.matchingEdges(new Edge('', [lhs], start));
-    for (var i in finalEdges) 
-      if (finalEdges[i].end == end) 
+    var finalEdges = this.passives[start][lhs];
+    for (var i in finalEdges) {
+      if (finalEdges[i].end == end) {
 	results.push(finalEdges[i].out);
+      }
+    }
     return results;
   }
   
-  // Chart.allEdges(bool)
-  // return an array of all edges in the chart
-  //  - onlyPassive (optional boolean): return only passive edges
-  this.allEdges = function(onlyPassive) {
+  // Chart.allEdges() / Chart.allPassiveEdges() / Chart.allActiveEdges()
+  // return an array of all (passive/active) edges in the chart
+  this.allEdges = function allEdges() {
+    return this.allPassiveEdges().concat(this.allActiveEdges());
+  }
+  this.allPassiveEdges = function allPassiveEdges() {
     var edges = [];
     for (var i in this.passives) 
       for (var j in this.passives[i]) 
 	for (var k in this.passives[i][j])
 	  edges.push(this.passives[i][j][k]);
-    if (onlyPassive)
-      return edges;
+    return edges;
+  }
+  this.allActiveEdges = function allActiveEdges() {
+    var edges = [];
     for (var i in this.actives) 
       for (var j in this.actives[i]) 
 	for (var k in this.actives[i][j])
 	  edges.push(this.actives[i][j][k]);
-    return edges
+    return edges;
   }
-  
+
   // Chart.statistics()
-  // return some numbers for the chart
-  this.statistics = function() {
-    return {nrEdges: this.allEdges().length,
-	    nrPassiveEdges: this.allEdges(true).length};
+  // return the number of edges in the chart
+  this.statistics = function statistics() {
+    var passives = this.allPassiveEdges().length;
+    var actives = this.allActiveEdges().length;
+    return {nrEdges: passives+actives, nrPassiveEdges: passives, nrActiveEdges: actives};
   }
 }
 
 
-// parse edges
-//  - lhs, rhs, start, are mandatory arguments
-//  - end, dot, out, rules, are optional arguments
-//    (defaulting to start, 0, {}, {}, respectively)
-function Edge(lhs, rhs, start, end, dot, out, rules) {
-  this.lhs = lhs;
-  this.rhs = rhs;
+//////////////////////////////////////////////////////////////////////
+// parse edges: passive and active
+
+function PassiveEdge(start, end, lhs, out) {
   this.start = start;
-  this.end = end || start;
-  this.dot = dot || 0;
-  this.out = out || {};
-  this.rules = rules || {};
+  this.end = end;
+  this.lhs = lhs;
+  this.out = out;
+  this.isPassive = true;
 
-  // slight optimization: calculate the serialization once
-  // NOTE: this means that edge must NOT be modified after creation!
-  var str = "[" + this.start + "-" + this.end + "] " + serialize(this.lhs) + " ->";
-  for (var i in this.rhs) {
-    if (i === this.dot)
-      str += " [*]";
-    str += " " + serialize(this.rhs[i]);
-  }
-  if (this.dot === this.rhs.length)
-    str += " [*]";
-  str += "\n\t" + serialize(this.out) + " := " + serialize(this.rules);
-  this._source = str;
-  
-  // Edge.toSource(), Edge.toString()
-  // string representation of the edge
-  // this can be used as a unique hash key
-  this.toSource = function() {return this._source;}
-  this.toString = function() {return this._source;} 
+  var str = "[" + start + "-" + end + "] $" + lhs + " := " + out;
+  this._string = str;
+  this.toString = function toString() {return this._string;} 
+}
 
-  // Edge.isPassive()
-  // returns true if the edge is passive
-  this.isPassive = function() {return this.dot >= this.rhs.length;}
-  
-  // Edge.next()
-  // returns the symbol after the dot, provided the edge is active
-  this.next = function() {return this.rhs[this.dot];}
-  
-  // Edge.combineWith(passive edge)
-  // create a new edge which is this edge combined with a matching passive edge
-  // NOTE: this presupposes that the edges match - no testing is done
-  this.combineWith = function(passive) {
-    var newOut = clone(this.out);
-    var newRules = clone(this.rules);
-    newRules[passive.lhs] = clone(passive.out);
-    return new Edge(this.lhs, this.rhs, this.start, passive.end, this.dot+1, newOut, newRules);
-  }
+function ActiveEdge(start, end, lhs, next, rest, out, rules) {
+  this.start = start;
+  this.end = end;
+  this.lhs = lhs;
+  this.next = next;
+  this.rest = rest;
+  this.out = out;
+  this.rules = rules;
+  this.isPassive = false;
+
+  var str = "<" + start + "-" + end + "> $" + lhs + " -> " + next + 
+    ", " + rest + " := " + out + " <- " + rules;
+  this._string = str;
+  this.toString = function toString() {return this._string;} 
 }
 
 
+//////////////////////////////////////////////////////////////////////
 // the main parsing function: a simple top-down chartparser
 //  - the words is an array of strings
-//  - the root is a category (string)
 //  - the grammar is a hash table of left-hand-sides mapping to arrays of right-hand-sides
-// returns an array of all possible interpretations
-function parse(words, root, grammar) {
+//  - the root is the starting category (a string)
+//    if unspecified, use the '$root' property of the grammar
+// returns the final chart
+function parse(words, grammar, root) {
+  if (!root) {
+    root = grammar.$root;
+  }
   var chart = new Chart(words.length);
   var agenda = [];
   
   // add an edge to the chart and the agenda, if it does not already exist
-  function addToChart(edge) {
-    if (chart.add(edge))
+  function addToChart(inference, start, end, lhs, rhs, out, rules) {
+    var edge;
+    if (rhs.length > 0) {
+      var next = rhs[0];
+      var rest = rhs.slice(1);
+      switch (next.constructor) {
+	
+      case Array:
+	// the next symbol is a sequence
+	addToChart(inference+",SEQUENCE", start, end, lhs, next.concat(rest), out, rules);
+	return;
+	
+      case RepeatClass:
+	// the next symbol is a repetition
+	var min = next.min;
+	var max = next.max;
+	// skip repeat 
+	if (min <= 0) {
+	  addToChart(inference+",SKIP", start, end, lhs, rest, out, rules);
+	}
+	// repeat 
+	if (max > 0) {
+	  var content = next.content;
+	  var rhs = (max==1 ? [content] : [content, Repeat(min ? min-1 : min, max-1, content)]);
+	  addToChart(inference+",REPEAT", start, end, lhs, rhs.concat(rest), out, rules);
+	}
+	return;
+	
+      case OneOfClass:
+	// the next symbol is a disjunction
+	var oneof = next.content;
+	for (var i in oneof) {
+	  var rhs = oneof[i].concat(rest);
+	  addToChart(inference+",ONEOF", start, end, lhs, rhs, out, rules);
+	} 
+	return;
+	
+      case TagClass:
+	// the next symbol is a semantic action
+	out = clone(out);
+	rules = clone(rules);
+	eval(next.content);
+	addToChart(inference+",TAG", start, end, lhs, rest, out, rules);
+	return;
+      }
+
+      edge = new ActiveEdge(start, end, lhs, next, rest, out, rules);
+    } else {
+      edge = new PassiveEdge(start, end, lhs, out);
+    }
+    
+    // try to add the edge; if successful, also add it to the agenda
+    if (chart.add(edge)) {
+      LOG("+ " + inference + ": " + edge);
       agenda.push(edge);
-  }  
-  
-  // seed the agenda with words
-  for (var i = 0; i < words.length; i++) {
-    var word = words[i];
-    var edge = new Edge(word, [], i, i+1);
-    addToChart(edge);
+    }
   }
   
   // seed the agenda with the starting rule
-  for (var i in grammar[root]) {
-    var edge = new Edge(root, grammar[root][i], 0);
-    addToChart(edge);
-  }
+  addToChart("INIT", 0, 0, root, grammar[root], {}, {});
   
   // main loop
   while (agenda.length > 0) {
     var edge = agenda.pop();
+    var start= edge.start;
+    var end  = edge.end;
+    var lhs  = edge.lhs;
+    var next = edge.next;
     LOG(edge);
-    
-    if (edge.isPassive()) {
-      // alt 1. the edge is passive
+
+    if (edge.isPassive) {
       // combine
-      var actives = chart.matchingEdges(edge);
+      var actives = chart.actives[start][lhs];
       for (var i in actives) {
-	var newEdge = actives[i].combineWith(edge);
-	LOG("+ COMBINE: " + newEdge);
-	addToChart(newEdge);
+	var active = actives[i];
+	var rules = clone(active.rules);
+	rules[edge.lhs] = clone(edge.out);
+	addToChart("COMBINE", active.start, end, active.lhs, active.rest, active.out, rules);
       }
 
-    } else {
-      var next = edge.next();
-
-      if (!(next instanceof Object)) {
-	// alt 2. the next symbol is a category or terminal
-	// combine
-	var passives = chart.matchingEdges(edge);
-	for (var i in passives) {
-	  var newEdge = edge.combineWith(passives[i]);
-	  LOG("+ COMBINE: " + newEdge);
-	  addToChart(newEdge);
-	}      
-	// predict
-	var rightHandSides = grammar[next];
-	for (var i in rightHandSides) {
-	  var newEdge = new Edge(next, rightHandSides[i], edge.end);
-	  LOG("+ PREDICT: " + newEdge);
-	  addToChart(newEdge);
-	}
-	
-      } else if (next instanceof Function) {
-	// alt 3. the next symbol is a semantic action
-	// NOTE: 'out' and 'rules' are global variables, which are changed by the action
-	out = clone(edge.out);
-	rules = clone(edge.rules);
-	next();
-	var newEdge = new Edge(edge.lhs, edge.rhs, edge.start, edge.end, edge.dot+1, out, rules);
-	LOG("+ ACTION: " + newEdge);
-	addToChart(newEdge);
-	
-      } else {
-	throw "Syntax error in edge: " + edge;
+    } else if (next.constructor == RefClass) {
+      var ref = next.content;
+      // combine
+      var passives = chart.passives[end][ref];
+      for (var i in passives) {
+	var passive = passives[i];
+	var rules = clone(edge.rules);
+	rules[passive.lhs] = clone(passive.out);
+	addToChart("COMBINE", start, passive.end, lhs, edge.rest, edge.out, rules);
       }
+      // predict
+      if (ref in grammar) {
+	addToChart("PREDICT", end, end, ref, grammar[ref], {}, {});
+      }
+
+    } else if (next == words[end]) {
+      // scan
+      addToChart("SCAN", start, end+1, lhs, edge.rest, edge.out, edge.rules);
     }
   }
 

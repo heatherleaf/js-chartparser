@@ -1,35 +1,36 @@
 
 // a very ambiguous grammar for doing calculations
 
-var grammarRoot = '$expr';
+var grammar = new Grammar('expr');
 
-var grammarRules = {
- $expr: [['$expr', '$oper', '$expr2',
-	  function(){out = rules.$oper(rules.$expr, rules.$expr2)}],
-	 ['$unary', '$expr',
-	  function(){out = rules.$unary(rules.$expr)}],
-	 ['$number', function(){out = rules.$number}]],
+grammar.expr = [OneOf([[Ref('expr'), Ref('oper'), Ref('expr2'),
+			Tag("out = rules.oper(rules.expr, rules.expr2)")],
+		       [Ref('unary'), Ref('expr'),
+			Tag("out = rules.unary(rules.expr)")],
+		       [Ref('number'), Tag("out = rules.number")]])];
 
- $expr2: [['$expr', function(){out = rules.$expr}]],
+grammar.expr2 = [Ref('expr'), Tag("out = rules.expr")];
 
- $unary: [['-', function(){out = function(x){return -x}}]],
+grammar.unary = [OneOf([['-', Tag("out = function(x){return -x}")]])];
 
- $oper: [['+', function(){out = function(x,y){return x+y}}],
-	 ['-', function(){out = function(x,y){return x-y}}],
-	 ['*', function(){out = function(x,y){return x*y}}]],
+grammar.oper = [OneOf([['+', Tag("out = function(x,y){return x+y}")],
+		       ['-', Tag("out = function(x,y){return x-y}")],
+		       ['*', Tag("out = function(x,y){return x*y}")]])];
 
- $number: [['$digit', function(){out = rules.$digit}],
-	   ['$number', '$digit', 
-	    function(){out = 10 * rules.$number + rules.$digit}]],
+grammar.number = [OneOf([[Ref('digit'), Tag("out = rules.digit")],
+			 [Ref('number'), Ref('digit'), 
+			  Tag("out = 10 * rules.number + rules.digit")]])];
 
- $digit: [['0', function(){out = 0}],
-	  ['1', function(){out = 1}],
-	  ['2', function(){out = 2}],
-	  ['3', function(){out = 3}],
-	  ['4', function(){out = 4}],
-	  ['5', function(){out = 5}],
-	  ['6', function(){out = 6}],
-	  ['7', function(){out = 7}],
-	  ['8', function(){out = 8}],
-	  ['9', function(){out = 9}]],
-}
+grammar.digit = [OneOf([['0', Tag("out = 0")],
+			['1', Tag("out = 1")],
+			['2', Tag("out = 2")],
+			['3', Tag("out = 3")],
+			['4', Tag("out = 4")],
+			['5', Tag("out = 5")],
+			['6', Tag("out = 6")],
+			['7', Tag("out = 7")],
+			['8', Tag("out = 8")],
+			['9', Tag("out = 9")]])];
+
+grammar.$check();
+

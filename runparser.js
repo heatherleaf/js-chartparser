@@ -12,21 +12,24 @@ function appendElement(parent, element, text) {
 function runParser(input) {
   var resultsDiv = document.getElementById("results");
   var startTime = new Date();
-  var parseChart = parse(input, grammarRoot, grammarRules);
+  var parseChart = parse(input, grammar, grammar.$root);
   var parseTime = new Date() - startTime;
-  var parseResults = parseChart.edgesForCat(grammarRoot);
+  var parseResults = parseChart.resultsForRule(grammar.$root);
 
   appendElement(resultsDiv, "H3", '"' + document.getElementById("input").value + '"');
   if (parseResults) { 
     var resultList = appendElement(resultsDiv, "OL");
     for (var i in parseResults) 
-      appendElement(resultList, "LI", serialize(parseResults[i]));
+      appendElement(resultList, "LI", parseResults[i]);
   } else {
     appendElement(resultsDiv, "P", "No results found!");
   }
 
-  appendElement(resultsDiv, "P", "Chart size: " + serialize(parseChart.statistics()));
-  appendElement(resultsDiv, "P", "Parse time: " + parseTime + " ms");
+  var statistics = parseChart.statistics()
+  appendElement(resultsDiv, "P", "Chart size: " + statistics.nrEdges + " edges" +
+		" (" + statistics.nrPassiveEdges + " passive)");
+  appendElement(resultsDiv, "P", "Parse time: " + parseTime + " ms" + 
+		" (" + (parseTime / statistics.nrEdges).toFixed(2) + " ms/edge)");
 }
 
 function runWordParser() {
