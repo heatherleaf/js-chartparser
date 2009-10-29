@@ -2,14 +2,12 @@
 grammar = new Grammar('utterance');
 
 grammar.utterance = [Ref('iwant'), Ref('order'), Tag("out = rules.order"), Optional(['please'])];
-// grammar.utterance = [Ref('order'), Tag("out = rules.order"), Optional(['please'])];
 
 grammar.iwant = [Optional([OneOf([['I', 'would', 'like'], 
 				  ['give', 'me']])])];
 
 grammar.order = [OneOf([[Ref('drink'), Tag("out.drink = rules.drink"),'and', Ref('pizza'), Tag("out.pizza = rules.pizza")],
 			[Ref('drink'), Tag("out.drink = rules.drink")],
-// 			])];
 			[Ref('pizza'), Tag("out.pizza = rules.pizza")]])];
 
 grammar.drink = [Ref("number"), Ref("foodsize"), Ref("kindofdrink"),
@@ -20,7 +18,6 @@ grammar.pizza = [Ref("number"), Tag("out.number = rules.number"),
 		 OneOf([["pizza"], ["pizzas"]]), 
 		 "with", Ref("toppings"), Tag("out.toppings = rules.toppings")];
 
-// grammar.kindofdrink = ['coke', Tag("out='coke';")];
 grammar.kindofdrink = [OneOf([[Ref('cokeword'), Tag("out='coke';")],
 			      [Ref('pepsiword'), Tag("out='pepsi';")]])];
 
@@ -42,7 +39,6 @@ grammar.topping = [OneOf([["anchovies", Tag("out='anchovies'")],
 			  ["mushroom", Tag("out='mushrooms'")],
 			  ["mushrooms", Tag("out='mushrooms'")]])];
 
-// grammar.number = ["a", Tag("out=1")];
 grammar.number = [OneOf([["a", Tag("out=1")],
 			 ["one", Tag("out=1")],
 			 ["two", Tag("out=2")],
