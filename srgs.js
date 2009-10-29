@@ -22,6 +22,15 @@ function Grammar(root) {
   }
 }
 
+function WordSet(str) {
+  var words = str.split(/ +/);
+  var set = {};
+  for (var i in words) {
+    set[words[i]] = true;
+  }
+  return set;
+}
+
 //////////////////////////////////////////////////////////////////////
 // rule expansion constructors
 

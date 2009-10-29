@@ -151,17 +151,30 @@ function ActiveEdge(start, end, lhs, next, rest, out, rules) {
 
 //////////////////////////////////////////////////////////////////////
 // the main parsing function: a simple top-down chartparser
-//  - the words is an array of strings
-//  - the grammar is a hash table of left-hand-sides mapping to arrays of right-hand-sides
-//  - the root is the starting category (a string)
+//  - 'words' is an array of strings
+//  - 'grammar' is a hash table of left-hand-sides mapping to arrays of right-hand-sides
+//  - 'root' is the starting category (a string)
 //    if unspecified, use the '$root' property of the grammar
+//  - 'filter' is an optional left-corner filter 
+//    (a mapping from categories/rule-refs to words)
+//    if specified, it is used when predicting new edges
 // returns the final chart
-function parse(words, grammar, root) {
+function parse(words, grammar, root, filter) {
   if (!root) {
     root = grammar.$root;
   }
   var chart = new Chart(words.length);
   var agenda = [];
+
+  var leftCornerFilter;
+  if (filter == undefined) {
+    leftCornerFilter = function() {return true};
+  } else {
+    leftCornerFilter = function leftCornerFilter(ruleref, position) {
+      var leftCorners = filter[ruleref];
+      return leftCorners ? words[position] in leftCorners : true;
+    }
+  }
   
   // add an edge to the chart and the agenda, if it does not already exist
   function addToChart(inference, start, end, lhs, rhs, out, rules) {
@@ -256,7 +269,9 @@ function parse(words, grammar, root) {
       }
       // predict
       if (ref in grammar) {
-	addToChart("PREDICT", end, end, ref, grammar[ref], {}, {});
+	if (leftCornerFilter(ref, end)) {
+	  addToChart("PREDICT", end, end, ref, grammar[ref], {}, {});
+	}
       }
 
     } else if (next == words[end]) {

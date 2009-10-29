@@ -1,6 +1,10 @@
 
 // helper functions for the parser demo
 
+function getElement(id) {
+  return document.getElementById(id);
+}
+
 function appendElement(parent, element, text) {
   var elem = document.createElement(element);
   if (text)
@@ -10,13 +14,19 @@ function appendElement(parent, element, text) {
 }
 
 function runParser(input) {
-  var resultsDiv = document.getElementById("results");
+  var resultsDiv = getElement("results");
+  appendElement(resultsDiv, "H3", '"' + input.join(" ") + '"');
+
+  var maybeFilter;
+  if (getElement("usefilter") && getElement("usefilter").checked) {
+    maybeFilter = filter;
+    appendElement(resultsDiv, "EM", "Using left-corner filter");
+  }
   var startTime = new Date();
-  var parseChart = parse(input, grammar, grammar.$root);
+  var parseChart = parse(input, grammar, grammar.$root, maybeFilter);
   var parseTime = new Date() - startTime;
   var parseResults = parseChart.resultsForRule(grammar.$root);
 
-  appendElement(resultsDiv, "H3", '"' + document.getElementById("input").value + '"');
   if (parseResults) { 
     var resultList = appendElement(resultsDiv, "OL");
     for (var i in parseResults) 
@@ -33,10 +43,10 @@ function runParser(input) {
 }
 
 function runWordParser() {
-  runParser(document.getElementById("input").value.split(/\s+/));
+  runParser(getElement("input").value.split(/\s+/));
 }
 
 function runCharacterParser() {
-  runParser(document.getElementById("input").value.split(""));
+  runParser(getElement("input").value.split(""));
 }
 
