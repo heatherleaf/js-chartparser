@@ -1,3 +1,11 @@
+//
+//  runparser.js
+//
+/*
+  The author or authors of this code dedicate any and all 
+  copyright interest in this code to the public domain.
+*/
+
 
 // helper functions for the parser demo
 

@@ -1,3 +1,11 @@
+//
+//  mathgrammar.js
+//
+/*
+  The author or authors of this code dedicate any and all 
+  copyright interest in this code to the public domain.
+*/
+
 
 // a very ambiguous grammar for doing calculations
 
