@@ -140,13 +140,15 @@ function checkSequenceExpansion(sequence) {
 
 RefClass.prototype.checkExpansion = function checkExpansion() {
     if (this.content.constructor !== String) {
-        throwRuleError("When checking Ref content; Expected String, found " + this.content.constructor.name);
+        throwRuleError("When checking Ref content; Expected String, found " + 
+                       this.content.constructor.name);
     }
 }
 
 TagClass.prototype.checkExpansion = function checkExpansion() {
     if (this.content.constructor !== String) {
-        throwRuleError("When checking Tag content; Expected String, found " + this.content.constructor.name);
+        throwRuleError("When checking Tag content; Expected String, found " + 
+                       this.content.constructor.name);
     }
 }
 
@@ -166,7 +168,8 @@ OneOfClass.prototype.checkExpansion = function checkExpansion() {
 RepeatClass.prototype.checkExpansion = function checkExpansion() {
     try {
         if (this.min.constructor !== Number || this.max.constructor !== Number) {
-            throwRuleError("Expected min/max to be Number, found " + this.min.constructor.name + "/" + this.max.constructor.name);
+            throwRuleError("Expected min/max to be Number, found " + 
+                           this.min.constructor.name + "/" + this.max.constructor.name);
         }
         if (!(0 <= this.min && this.min <= this.max)) {
             throwRuleError("Expected 0 <= min <= max, found " + this.min + "/" + this.max);

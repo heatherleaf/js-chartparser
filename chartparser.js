@@ -237,7 +237,8 @@ function parse(words, grammar, root, filter) {
                     
                 case Array:
                     // the next symbol is a sequence
-                    addToChart(inference+",SEQUENCE", start, end, lhs, next.concat(rest), out, rules, children);
+                    addToChart(inference+",SEQUENCE", start, end, lhs, 
+                               next.concat(rest), out, rules, children);
                     return;
                     
                 case RepeatClass:
@@ -246,13 +247,18 @@ function parse(words, grammar, root, filter) {
                     var max = next.max;
                     // skip repeat 
                     if (min <= 0) {
-                        addToChart(inference+",SKIP", start, end, lhs, rest, out, rules, children);
+                        addToChart(inference+",SKIP", start, end, lhs, 
+                                   rest, out, rules, children);
                     }
                     // repeat 
                     if (max > 0) {
                         var content = next.content;
-                        var rhs = (max==1 ? [content] : [content, Repeat(min ? min-1 : min, max-1, content)]);
-                        addToChart(inference+",REPEAT", start, end, lhs, rhs.concat(rest), out, rules, children);
+                        var rhs = [content];
+                        if (max > 1) {
+                            rhs.push(Repeat(min ? min-1 : min, max-1, content));
+                        }
+                        addToChart(inference+",REPEAT", start, end, lhs, 
+                                   rhs.concat(rest), out, rules, children);
                     }
                     return;
                     
@@ -261,7 +267,8 @@ function parse(words, grammar, root, filter) {
                     var oneof = next.content;
                     for (var i in oneof) {
                         var rhs = oneof[i].concat(rest);
-                        addToChart(inference+",ONEOF", start, end, lhs, rhs, out, rules, children);
+                        addToChart(inference+",ONEOF", start, end, lhs, 
+                                   rhs, out, rules, children);
                     } 
                     return;
                     
@@ -271,7 +278,8 @@ function parse(words, grammar, root, filter) {
                     rules = clone(rules);
                     children = clone(children);
                     eval(next.content);
-                    addToChart(inference+",TAG", start, end, lhs, rest, out, rules, children);
+                    addToChart(inference+",TAG", start, end, lhs, 
+                               rest, out, rules, children);
                     return;
             }
             edge = new ActiveEdge(start, end, lhs, next, rest, out, rules, children);
@@ -317,7 +325,9 @@ function parse(words, grammar, root, filter) {
                     children = clone(active.children);
                     children.push(clone(edge.tree));
                 }
-                addToChart("COMBINE", active.start, end, active.lhs, active.rest, active.out, rules, children);
+                addToChart("COMBINE", active.start, end, active.lhs, 
+                           
+                           active.rest, active.out, rules, children);
             }
             
         } else if (next.constructor == RefClass) {
@@ -333,12 +343,14 @@ function parse(words, grammar, root, filter) {
                     children = clone(edge.children);
                     children.push(clone(passive.tree));
                 }
-                addToChart("COMBINE", start, passive.end, lhs, edge.rest, edge.out, rules, children);
+                addToChart("COMBINE", start, passive.end, lhs, 
+                           edge.rest, edge.out, rules, children);
             }
             // predict
             if (ref in grammar) {
                 if (leftCornerFilter(ref, end)) {
-                    addToChart("PREDICT", end, end, ref, grammar[ref], {}, {}, []);
+                    addToChart("PREDICT", end, end, ref, 
+                               grammar[ref], {}, {}, []);
                 }
             }
             
@@ -349,7 +361,8 @@ function parse(words, grammar, root, filter) {
                 children = clone(edge.children);
                 children.push(next);
             }
-            addToChart("SCAN", start, end+1, lhs, edge.rest, edge.out, edge.rules, children);
+            addToChart("SCAN", start, end+1, lhs, 
+                       edge.rest, edge.out, edge.rules, children);
         }
     }
     
