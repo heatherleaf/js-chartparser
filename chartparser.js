@@ -44,11 +44,16 @@ function clone(obj){
 
 //////////////////////////////////////////////////////////////////////
 // objects are by default printed "[Object]"
-// we change this behaviour, to be able to use objects in hash tables
-Object.prototype.toString = function toString() {
+// to be able to use objects in hash tables, 
+// we need a better string representation
+
+function objectString(obj) {
+  if (obj == null || typeof(obj) != 'object') {
+    return obj.toString();
+  }
   var str = "{";
-  for (var key in this) {
-    str += key + ":" + this[key] + ";";
+  for (var key in obj) {
+    str += key + ":" + objectString(obj[key]) + ";";
   }
   return str + "}";
 };
@@ -147,7 +152,7 @@ function PassiveEdge(start, end, lhs, out) {
   this.out = out;
   this.isPassive = true;
 
-  var str = "[" + start + "-" + end + "] $" + lhs + " := " + out;
+  var str = "[" + start + "-" + end + "] $" + lhs + " := " + objectString(out);
   this._string = str;
   this.toString = function toString() {return this._string;} 
 }
@@ -163,7 +168,7 @@ function ActiveEdge(start, end, lhs, next, rest, out, rules) {
   this.isPassive = false;
 
   var str = "<" + start + "-" + end + "> $" + lhs + " -> " + next + 
-    ", " + rest + " := " + out + " <- " + rules;
+    ", " + rest + " := " + objectString(out) + " <- " + objectString(rules);
   this._string = str;
   this.toString = function toString() {return this._string;} 
 }
