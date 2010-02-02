@@ -21,33 +21,67 @@ function appendElement(parent, element, text) {
   return elem
 }
 
+function treeString(tree) {
+  if (typeof(tree) == 'object' && tree.label) {
+    str = "(" + tree.label
+    if (tree.children) {
+      for (var i in tree.children) {
+        str += " " + treeString(tree.children[i])
+      }
+    }
+    return str + ")"
+  } else {
+    return stringRepr(tree)
+  }
+}
+
+// remember the original makeTree function, since runParser() redefines it:
+var originalMakeTree = makeTree;
+
 function runParser(input) {
   var resultsDiv = getElement("results");
-  appendElement(resultsDiv, "H3", '"' + input.join(" ") + '"');
-
+  appendElement(resultsDiv, "hr");
+  appendElement(resultsDiv, "h3", '"' + input.join(" ") + '"');
+  
+  if (getElement("parsetrees") && getElement("parsetrees").checked) {
+    makeTree = originalMakeTree;
+    appendElement(resultsDiv, "em", "[building parsetrees] ");
+  } else {
+    makeTree = false;
+  }
+  
   var maybeFilter;
   if (getElement("usefilter") && getElement("usefilter").checked) {
     maybeFilter = filter;
-    appendElement(resultsDiv, "EM", "Using left-corner filter");
+    appendElement(resultsDiv, "em", "[using left-corner filter] ");
   }
+  
   var startTime = new Date();
   var parseChart = parse(input, grammar, grammar.$root, maybeFilter);
   var parseTime = new Date() - startTime;
-  var parseResults = parseChart.resultsForRule(grammar.$root);
-
-  if (parseResults) { 
-    var resultList = appendElement(resultsDiv, "OL");
-    for (var i in parseResults) 
-      appendElement(resultList, "LI", parseResults[i]);
-  } else {
-    appendElement(resultsDiv, "P", "No results found!");
-  }
-
+  
   var statistics = parseChart.statistics()
-  appendElement(resultsDiv, "P", "Chart size: " + statistics.nrEdges + " edges" +
-		" (" + statistics.nrPassiveEdges + " passive)");
-  appendElement(resultsDiv, "P", "Parse time: " + parseTime + " ms" + 
-		" (" + (parseTime / statistics.nrEdges).toFixed(2) + " ms/edge)");
+  appendElement(resultsDiv, "p", "Chart size: " + statistics.nrEdges + " edges" +
+                " (" + statistics.nrPassiveEdges + " passive)");
+  appendElement(resultsDiv, "p", "Parse time: " + parseTime + " ms" + 
+                " (" + (parseTime / statistics.nrEdges).toFixed(2) + " ms/edge)");
+  
+  var parseTrees = parseChart.treesForRule(grammar.$root);
+  if (parseTrees) { 
+    appendElement(resultsDiv, "p", "Parse trees: " + parseTrees.length);
+    var resultList = appendElement(resultsDiv, "ol");
+    for (var i in parseTrees) {
+      var tree = parseTrees[i];
+      if (tree.data) {
+        var listItem = appendElement(resultList, "li", stringRepr(tree.data));
+        appendElement(listItem, "p", treeString(tree));
+      } else {
+        appendElement(resultList, "li", treeString(tree));
+      }
+    }
+  } else {
+    appendElement(resultsDiv, "p", "No results found!");
+  }
 }
 
 function runWordParser() {

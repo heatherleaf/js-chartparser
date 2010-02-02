@@ -32,11 +32,11 @@ function Grammar(root) {
   this.$check = function() {
     for (var i in this) {
       if (i !== "$root" && i !== "$check") {
-	try {
-	  checkSequenceExpansion(this[i]);
-	} catch(err) {
-	  throwRuleError("When checking grammar rule '" + i + "'", err);
-	}
+        try {
+          checkSequenceExpansion(this[i]);
+        } catch(err) {
+          throwRuleError("When checking grammar rule '" + i + "'", err);
+        }
       }
     }
   }
@@ -126,9 +126,9 @@ function checkSequenceExpansion(sequence) {
     }
     for (var i in sequence) {
       if (sequence[i].constructor == Array) {
-	checkSequenceExpansion(sequence[i]);
+        checkSequenceExpansion(sequence[i]);
       } else if (sequence[i].constructor != String) {
-	sequence[i].checkExpansion();
+        sequence[i].checkExpansion();
       }
     }
   } catch(err) {
